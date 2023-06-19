@@ -9,8 +9,7 @@ date: "2023-06-19"
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(nullabor)
-library(ggplot2)
-library(dbplyr)
+library(tidyverse)
 ```
 
 # Setting 
@@ -27,10 +26,13 @@ library(dbplyr)
   - 3 replicated data sets; sampled from exponential distributions with $\lambda_1 = 1$ and $\lambda_2 = 1/(d+1)$ 
   - 4 graph types: boxplots, density plots, histograms, dotplots 
 
-Related to this, I plan to do the following naming: 
-- data set followed by the graph types 
+How to read the stimuli: 
 
-\\
+- images are indexed by numbers from 1 to 20, as well as a subindex of 0 or 1, indicating whether it was the true plot or not. 
+- each image is contained in two folders
+  - the outer folder contains information about the data set; for example, a folder of the name `d0.8n135r0.33rep2` tells you that the data of each image in this folder corresponds to the data set generated with factors $d = 0.8, n_1 = 135, r = 1/3$ and is the second replication of a total of three replications. 
+  - the inner folder contains information about which plot type; there are a total of 4 possible plot types: `box`, `den`, `dot`, and `hist` 
+
 
 ```{r}
 d <- 0.4# size of the shift between distributions 
@@ -162,45 +164,5 @@ ggplot(d, aes(x = Value, y = Group, color = Group)) +
         axis.ticks=element_blank())
 ```
 
-# Saving stimuli 
 
-
-```{r}
-d <- 0.4 # size of the shift between distributions 
-n1 <- 15 # size of the first group of points 
-r <- 1/3 # ratio between n1 and n2 
-n2 <- r * n1 
-data1 <- rexp(n1, 1)
-data2 <- rexp(n2, 1/(d + 1)) 
-c_df <- data.frame(
-  Value = c(data1, data2),
-  Group = factor(c(rep("1", n1), rep("2", n2)))
-)
-# lineup data 
-df <- lineup(null_permute("Value"), c_df)
-df_pos <- attr(df, "pos")
-# splitting it up 
-df_split <- df %>% group_split(.sample)
-
-# can't use mapping but might use something else: 
-for (i in unique(df$.sample)){
-  df_i <- df_split[[i]] 
-  p <- ggplot(df_i, aes(x = Value, color = Group, fill = Group)) + ylab("") + 
-    geom_density(alpha=0.5) + 
-    theme(legend.position = "none",
-       axis.title.x=element_blank(),
-       axis.text.x=element_blank(),
-       axis.ticks.x=element_blank())
-  if (i == df_pos){
-    ggsave(paste("./images/d", d, "n", n1, "r", round(r, 2), "rep1/den/", i, "_1.png", sep=""), width=480, height=480, units="px", plot=p)
-  } else if (i != df_pos) {
-    ggsave(paste("./images/d", d, "n", n1, "r", round(r, 2), "rep1/den/", i, "_0.png", sep=""), width=480, height=480, units="px", plot=p)
-  }
-}
-```
-
-### Saving all things in a big loop: 
-
-```{r}
-```
 

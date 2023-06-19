@@ -106,3 +106,45 @@ for (d in c(0.4, 0.6, 0.8, 1.0, 1.2)){
     }
   }
 }
+
+
+# just so happens that I'll need to do some cleaning up 
+
+d <- 0.4 
+n1 <- 15 
+r <- 1/3 
+n2 <- r * n1 
+for (rep in seq(1, 3)){ # generate data for 3 replications
+  data1 <- rexp(n1, 1)
+  data2 <- rexp(n2, 1/(d + 1)) 
+  # combined dataframe 
+  c_df <- data.frame(
+    Value = c(data1, data2),
+    Group = factor(c(rep("1", n1), rep("2", n2)))
+  )
+  # lineup data 
+  df <- lineup(null_permute("Value"), c_df)
+  # real data position 
+  df_pos <- attr(df, "pos")
+  # splitting it up 
+  df_split <- df %>% group_split(.sample)
+  for (i in unique(df$.sample)){
+    df_i <- df_split[[i]] 
+    p_den <- gen_graph(df_i, "den")
+    p_box <- gen_graph(df_i, "box")
+    p_hist <- gen_graph(df_i, "hist")
+    p_dot <- gen_graph(df_i, "dot")
+    
+    if (i == df_pos){
+      save_graph("den", i, p_den, TRUE)
+      save_graph("box", i, p_box, TRUE)
+      save_graph("hist", i, p_hist, TRUE)
+      save_graph("dot", i, p_dot, TRUE)
+    } else if (i != df_pos) {
+      save_graph("den", i, p_den, FALSE)
+      save_graph("box", i, p_box, FALSE)
+      save_graph("hist", i, p_hist, FALSE)
+      save_graph("dot", i, p_dot, FALSE)
+    }
+  }
+}

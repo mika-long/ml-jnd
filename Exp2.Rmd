@@ -1,0 +1,206 @@
+---
+title: "Hofmann experiment 2"
+output: 
+  tufte::tufte_handout: default 
+  tufte::tufte_html: default 
+date: "2023-06-19"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(nullabor)
+library(ggplot2)
+library(dbplyr)
+```
+
+# Setting 
+
+- Objective: investigate the power of four competing designs, in assessing a mean shift between distributions 
+- Hypotheses for each lineup are: 
+  - $H_0$: centers of the two groups are the same 
+  - $H_a$: centers of the blue group is shifted to the right (blue group is group 2) 
+- factors: 
+  - size of the shift between two distributions $d \in \{0.4, 0.6, 0.8, 1.0, 1.2\}$ (5 levels)
+  - size of the larger group: $n_1 \in \{15, 45, 135\}$ (3 levels)
+  - relative size of the second group: $r \in \{1/3, 2/3, 3/3\}$ (3 levels); 
+  $n_2 = r\cdot n_1$
+  - 3 replicated data sets; sampled from exponential distributions with $\lambda_1 = 1$ and $\lambda_2 = 1/(d+1)$ 
+  - 4 graph types: boxplots, density plots, histograms, dotplots 
+
+Related to this, I plan to do the following naming: 
+- data set followed by the graph types 
+
+\\
+
+```{r}
+d <- 0.4# size of the shift between distributions 
+n1 <- 15 # size of the fitst group of points 
+r <- 1/3 # ratio between n1 and n2 
+n2 <- r * n1 
+data1 <- rexp(n1, 1)
+data2 <- rexp(n2, 1/(d + 1)) 
+```
+  
+The authors associate a "difficulty" level with lineups from 1 to 9, using the $p$-value corresponding to the difference in means between the two groups in the simulated data sets: 
+
+```{r}
+result <- t.test(data1, data2)
+result 
+```
+  
+
+# Charts 
+
+## Boxplot: 
+
+```{r fig.margin=TRUE}
+# Combine the samples into one dataframe: 
+# combined data 
+c_df <- data.frame(
+  Value = c(data1, data2),
+  Group = factor(c(rep("1", n1), rep("2", n2)))
+)
+ggplot(c_df, aes(x = Value, y = Group, fill = Group, color = Group)) +
+  geom_boxplot(alpha=0.5) +
+  xlab("") + 
+  ylab("") + 
+  theme(legend.position = "none", 
+        axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+```
+
+Using the `nullabor` package, we can generate a lineup graph. Also, based on figure 3 in the original picture, it is safe to assume that the task each participant saw was: In which plot is the blue group furthest to the right?  
+
+```{r, fig.fullwidth=TRUE}
+d <- lineup(null_permute("Value"), c_df)
+ggplot(d, aes(x = Value, y = Group, fill = Group, color = Group)) +
+  geom_boxplot(alpha=0.5) +
+  facet_wrap(~ .sample) + 
+  xlab("") + 
+  ylab("") + 
+  theme(legend.position = "none", 
+        axis.title=element_blank(),
+        axis.text=element_blank(),
+        axis.ticks=element_blank())
+```
+
+The position of the true graph (i.e., the un-permutated one), is: 
+```{r}
+attr(d, "pos") # position of actual graph 
+```
+
+## Density plot 
+
+```{r, fig.margin=TRUE}
+ggplot(c_df, aes(x = Value, color = Group, fill = Group)) +
+  geom_density(alpha=0.5) + 
+  ylab("") + 
+  theme(legend.position = "none", 
+        axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+```
+
+A sample lineup looks as follows: 
+```{r, fig.fullwidth=TRUE}
+ggplot(d, aes(x = Value, color = Group, fill = Group)) +
+  geom_density(alpha=0.5) + 
+  facet_wrap(~ .sample) + 
+  ylab("") + 
+  theme(legend.position = "none", 
+        axis.title=element_blank(),
+        axis.text=element_blank(),
+        axis.ticks=element_blank())
+```
+
+## Histogram 
+
+```{r, fig.margin=TRUE}
+ggplot(c_df, aes(x = Value, fill = Group)) +
+  geom_histogram(alpha=0.5, stat = "bin", bins = 10) +
+  ylab("") + 
+  theme(legend.position = "none", 
+        axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+```
+
+A sample lineup chart looks like follows: 
+
+```{r, fig.fullwidth=TRUE}
+ggplot(d, aes(x = Value, fill = Group)) +
+  geom_histogram(alpha=0.5, stat = "bin", bins = 10) +
+  facet_wrap(~ .sample) + 
+  theme(legend.position = "none", 
+        axis.title=element_blank(),
+        axis.text=element_blank(),
+        axis.ticks=element_blank())
+```
+
+## Dotplot 
+
+```{r, fig.margin=TRUE}
+ggplot(c_df, aes(x = Value, y = Group, color = Group)) +
+  geom_jitter(alpha=0.5, height = 0.05) + 
+  ylab("") + 
+  theme(legend.position = "none", 
+        axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+```
+
+Sample lineup looks as follows: 
+
+```{r, fig.fullwidth=TRUE}
+ggplot(d, aes(x = Value, y = Group, color = Group)) +
+  geom_jitter(alpha=0.5, height = 0.05) + 
+  facet_wrap(~ .sample) + 
+  theme(legend.position = "none", 
+        axis.title=element_blank(),
+        axis.text=element_blank(),
+        axis.ticks=element_blank())
+```
+
+# Saving stimuli 
+
+
+```{r}
+d <- 0.4 # size of the shift between distributions 
+n1 <- 15 # size of the first group of points 
+r <- 1/3 # ratio between n1 and n2 
+n2 <- r * n1 
+data1 <- rexp(n1, 1)
+data2 <- rexp(n2, 1/(d + 1)) 
+c_df <- data.frame(
+  Value = c(data1, data2),
+  Group = factor(c(rep("1", n1), rep("2", n2)))
+)
+# lineup data 
+df <- lineup(null_permute("Value"), c_df)
+df_pos <- attr(df, "pos")
+# splitting it up 
+df_split <- df %>% group_split(.sample)
+
+# can't use mapping but might use something else: 
+for (i in unique(df$.sample)){
+  df_i <- df_split[[i]] 
+  p <- ggplot(df_i, aes(x = Value, color = Group, fill = Group)) + ylab("") + 
+    geom_density(alpha=0.5) + 
+    theme(legend.position = "none",
+       axis.title.x=element_blank(),
+       axis.text.x=element_blank(),
+       axis.ticks.x=element_blank())
+  if (i == df_pos){
+    ggsave(paste("./images/d", d, "n", n1, "r", round(r, 2), "rep1/den/", i, "_1.png", sep=""), width=480, height=480, units="px", plot=p)
+  } else if (i != df_pos) {
+    ggsave(paste("./images/d", d, "n", n1, "r", round(r, 2), "rep1/den/", i, "_0.png", sep=""), width=480, height=480, units="px", plot=p)
+  }
+}
+```
+
+### Saving all things in a big loop: 
+
+```{r}
+```
+

@@ -1,0 +1,152 @@
+---
+title: "ml-jnd study II"
+author: "Sheng Long"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(nullabor)
+library(dplyr)
+```
+
+# Hoffman Study II: Comparing distribution centers 
+
+... between two data sets. 
+
+---
+
+Considers the following factors: 
+
+- size of the shift $d$ between the means of the distribution (*5 levels*): $$d = \{0.4, 0.6, 0.8, 1.0, 1.2\}$$
+- size of the larger group (*3 levels*) $$n_1 = \{15, 45, 135\}$$ 
+- ratio between smaller group and larger group (*3 levels*): $$
+\frac{n_2}{n_1}= \{\frac{1}{3}, \frac{2}{3} , \frac{3}{3} \}$$ 
+
+For each ($d \times n_1 \times n_2$) we replicate it three times, resulting in $5 \times 3 \times 3 \times 3 = 135$ different data sets. 
+
+For each data set, we create 4 lineups, each corresponding to a particular design: 
+
+1. boxplot: `geom_boxplot()` 
+2. density plot: `geom_density()`
+3. historgram: `geom_histogram()` 
+4. dotplots: `geom_jitter()` 
+
+This results in 135 data sets $\times$ 4 design types = $540$ lineups. 
+
+Each participant was shown 10 lineups, and one of the lineup was a reference chart. 
+
+- values are drawn from exponential distributions;  
+  - the first distribution has rate parameter $\lambda_1 = 1$
+  - the second distribution has rate parameter $\lambda_2 = \frac{1}{d+1}$ 
+
+Table 4 in the original paper says that they've fit a generalized linear mixed effects model using 2513 lineup evaluations by 208 participants. 
+
+- This number doesn't quite add up ... If each participant did 9 different lineups, this would result in `r 208 * 9` evaluations, which is strictly smaller than 2513... but then again, the paper doesn't really explain this experiment that well ... 
+
+# Generating simulated data 
+
+```{r}
+# define function that sets up data
+gen_data <- function() {
+  # set up parameters
+  d <- 0.4 # 0.4, 0.6, 0.8, 1.0, 1.2
+  n1 <- 15 # 15, 45, 135 
+  r <- 1/3 # 1/3, 2/3, 3/3
+  n2 <- r * n1 
+  
+  # Generate samples from exponential distribution
+  s1 <- rexp(n1, rate = 1)
+  s2 <- rexp(n2, rate = 1/(d + 1))
+  
+  # create dataframe 
+  df <- data.frame(Value = c(s1, s2),
+                   Cat = c(rep("1",length(s1)), rep("2",length(s2))))#,
+                   #xseq = c(seq_along(s1),seq_along(s2)))
+}
+```
+
+# Box plot 
+```{r}
+df <- gen_data()
+g <- ggplot(df, aes(x=Value, y=Cat, fill=Cat, color=Cat)) +
+  geom_boxplot(alpha=.5, show.legend = FALSE) + 
+  xlab("") + 
+  ylab("") + 
+  theme(axis.title.x = element_blank(), 
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank())
+g
+```
+
+# Density plot
+
+```{r}
+df <- gen_data()
+g <- ggplot(df, aes(x=Value, fill=Cat, color=Cat)) +
+  geom_density(alpha=.5, show.legend = FALSE) + 
+  xlab("") + 
+  ylab("") + 
+  theme(axis.title.x = element_blank(), 
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank())
+g
+```
+
+# Historgram
+
+```{r}
+df <- gen_data()
+g <- ggplot(df, aes(x=Value, fill = Cat)) +
+  geom_histogram(alpha=.5, show.legend = FALSE, bins=10) +
+  xlab("") + 
+  ylab("") + 
+  theme(axis.title.x = element_blank(), 
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank())
+g
+```
+
+# Dot plot 
+
+```{r}
+df <- gen_data()
+g <- ggplot(df, aes(y = Cat, x = Value, color = Cat)) + 
+  # geom_point(show.legend = FALSE) + 
+  geom_jitter(height=0.05, alpha=.75, show.legend = FALSE) + 
+  xlab("") + 
+  ylab("") + 
+  theme(axis.title.x = element_blank(), 
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank())
+g
+```
+
+
+
+# Making the null plots 
+
+```{r}
+# For dot plots 
+df <- gen_data()
+d <- lineup(null_permute("df"))
+str(d)
+```
+
+```{r}
+# lineup 
+ggplot(data=d,  aes(y = Cat, x = Value, color = Cat)) + 
+  geom_point(alpha=.75, show.legend = FALSE) + 
+  xlab("") + 
+  ylab("") + 
+  facet_wrap(~ .sample)
+```
+
+# Creating and saving stimuli 
+
+```{r}
+d_grouped <- d %>% group_by(.sample)
+group_split(d_grouped)
+```
